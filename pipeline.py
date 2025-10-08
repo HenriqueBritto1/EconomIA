@@ -55,20 +55,25 @@ def limpar_texto(texto):
     palavras = [p for p in palavras if p not in stopwords_pt]
     return " ".join(palavras)
 
-df["texto_limpo"] = df["titulo"].apply(limpar_texto)
+df["texto_completo_limpo"] = df["titulo"].apply(limpar_texto) + " " + df["descricao"].apply(limpar_texto)
+
+print("----------------------------\n")
+print("Gerando Embeddings")
+
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+embeddings = model.encode(df["texto_completo_limpo"].tolist())
 
 print("----------------------------\n")
 print("treinando modelo")
 
-vectorizer = TfidfVectorizer(max_features=500)
-X = vectorizer.fit_transform(df["texto_limpo"])
-y = df["categoria"]
-
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
+    embeddings, df["categoria"], test_size=0.3, random_state=42, stratify=df["categoria"]
 )
 
-knn = KNeighborsClassifier(n_neighbors=3)
+knn = KNeighborsClassifier(n_neighbors=5)
 knn.fit(X_train, y_train)
 y_pred = knn.predict(X_test)
 
