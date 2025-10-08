@@ -1,0 +1,2 @@
+# EconomIA
+Trabalho de IA
