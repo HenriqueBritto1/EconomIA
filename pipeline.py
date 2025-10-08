@@ -1,5 +1,4 @@
 import requests
-from bs4 import BeautifulSoup
 import pandas as pd
 import re
 import nltk
@@ -8,36 +7,41 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
+from bs4 import BeautifulSoup
 
 
-print("Coletando notícias via RSS do InfoMoney")
+print("Coletando notícias via RSS do G1")
 
-rss_feeds = {
-    "Economia": "https://www.infomoney.com.br/economia/feed/",
-    "Mercados": "https://www.infomoney.com.br/mercados/feed/"
+categorias = {
+    "Economia": "https://g1.globo.com/rss/g1/economia/",
+    "Política": "https://g1.globo.com/rss/g1/politica/",
+    "Mundo": "https://g1.globo.com/rss/g1/mundo/",
+    "Tecnologia": "https://g1.globo.com/rss/g1/tecnologia/",
+    "Educação": "https://g1.globo.com/rss/g1/educacao/"
 }
 
-dados = []
+noticias = []
 
-for categoria, feed_url in rss_feeds.items():
+for categoria, feed_url in categorias.items():
     print(f"→ Coletando categoria: {categoria}")
     r = requests.get(feed_url)
     soup = BeautifulSoup(r.content, "xml")
 
     for item in soup.find_all("item"):
-        titulo = item.title.text.strip()
-        link = item.link.text.strip()
-        descricao = item.description.text.strip()
-        dados.append({
+        titulo = item.title.text.strip() if item.title else ""
+        link = item.link.text.strip() if item.link else ""
+        descricao = item.description.text.strip() if item.description else ""
+        noticias.append({
             "titulo": titulo,
             "descricao": descricao,
             "link": link,
             "categoria": categoria
         })
 
-df = pd.DataFrame(dados)
+df = pd.DataFrame(noticias)
 print(f"✅ {len(df)} notícias coletadas!\n")
 
+print("----------------------------\n")
 print("Limpando textos")
 
 nltk.download("stopwords", quiet=True)
@@ -53,7 +57,7 @@ def limpar_texto(texto):
 
 df["texto_limpo"] = df["titulo"].apply(limpar_texto)
 
-
+print("----------------------------\n")
 print("treinando modelo")
 
 vectorizer = TfidfVectorizer(max_features=500)
@@ -73,5 +77,5 @@ print("Acurácia:", round(accuracy_score(y_test, y_pred), 3))
 print("\nRelatório de Classificação:")
 print(classification_report(y_test, y_pred))
 
-df.to_csv("noticias_infomoney_rss.csv", index=False)
-print("\n💾 Dados salvos em 'noticias_infomoney_rss.csv'")
+df.to_csv("noticias_g1_rss.csv", index=False)
+print("\n💾 Dados salvos em 'noticias_g1_rss.csv'")
